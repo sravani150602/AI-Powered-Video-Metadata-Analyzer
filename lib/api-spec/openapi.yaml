@@ -1,0 +1,402 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Video Metadata Analyzer API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: videos
+    description: Video metadata operations
+  - name: analytics
+    description: Analytics and trends
+  - name: analyze
+    description: AI analysis operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /videos:
+    get:
+      operationId: getVideos
+      tags: [videos]
+      summary: List all videos
+      description: Returns all video records with metadata and AI analysis
+      parameters:
+        - name: genre
+          in: query
+          schema:
+            type: string
+          description: Filter by genre
+        - name: limit
+          in: query
+          schema:
+            type: integer
+          description: Max number of results
+        - name: offset
+          in: query
+          schema:
+            type: integer
+          description: Offset for pagination
+      responses:
+        "200":
+          description: List of videos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoListResponse"
+    post:
+      operationId: createVideo
+      tags: [videos]
+      summary: Create a video metadata record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVideoBody"
+      responses:
+        "201":
+          description: Created video
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /videos/{id}:
+    get:
+      operationId: getVideo
+      tags: [videos]
+      summary: Get a single video
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Video details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteVideo
+      tags: [videos]
+      summary: Delete a video record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /videos/{id}/analyze:
+    post:
+      operationId: analyzeVideo
+      tags: [analyze]
+      summary: Run AI analysis on a video record
+      description: Uses Gemini NLP to classify genre, extract topics, and generate tags
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /analyze/batch:
+    post:
+      operationId: analyzeBatch
+      tags: [analyze]
+      summary: Analyze all unanalyzed videos
+      description: Runs Gemini NLP pipeline on all videos without analysis
+      responses:
+        "200":
+          description: Batch analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchAnalysisResult"
+
+  /analytics/summary:
+    get:
+      operationId: getAnalyticsSummary
+      tags: [analytics]
+      summary: Get analytics summary
+      description: Returns content trends, genre distribution, and top tags
+      responses:
+        "200":
+          description: Analytics summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsSummary"
+
+  /analytics/trends:
+    get:
+      operationId: getContentTrends
+      tags: [analytics]
+      summary: Get content trends over time
+      responses:
+        "200":
+          description: Trends data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentTrendsResponse"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+    CreateVideoBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        channel:
+          type: ["string", "null"]
+        duration:
+          type: ["integer", "null"]
+        publishedAt:
+          type: ["string", "null"]
+        sourceUrl:
+          type: ["string", "null"]
+      required:
+        - title
+        - description
+
+    Video:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        channel:
+          type: ["string", "null"]
+        duration:
+          type: ["integer", "null"]
+        publishedAt:
+          type: ["string", "null"]
+        sourceUrl:
+          type: ["string", "null"]
+        genre:
+          type: ["string", "null"]
+        subGenre:
+          type: ["string", "null"]
+        tags:
+          type: array
+          items:
+            type: string
+        topics:
+          type: array
+          items:
+            type: string
+        sentiment:
+          type: ["string", "null"]
+        targetAudience:
+          type: ["string", "null"]
+        contentRating:
+          type: ["string", "null"]
+        aiSummary:
+          type: ["string", "null"]
+        analysisStatus:
+          type: string
+          enum: [pending, processing, completed, failed]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - title
+        - description
+        - tags
+        - topics
+        - analysisStatus
+        - createdAt
+        - updatedAt
+
+    VideoListResponse:
+      type: object
+      properties:
+        videos:
+          type: array
+          items:
+            $ref: "#/components/schemas/Video"
+        total:
+          type: integer
+      required:
+        - videos
+        - total
+
+    BatchAnalysisResult:
+      type: object
+      properties:
+        processed:
+          type: integer
+        succeeded:
+          type: integer
+        failed:
+          type: integer
+      required:
+        - processed
+        - succeeded
+        - failed
+
+    GenreCount:
+      type: object
+      properties:
+        genre:
+          type: string
+        count:
+          type: integer
+      required:
+        - genre
+        - count
+
+    TagCount:
+      type: object
+      properties:
+        tag:
+          type: string
+        count:
+          type: integer
+      required:
+        - tag
+        - count
+
+    AnalyticsSummary:
+      type: object
+      properties:
+        totalVideos:
+          type: integer
+        analyzedVideos:
+          type: integer
+        pendingVideos:
+          type: integer
+        genreDistribution:
+          type: array
+          items:
+            $ref: "#/components/schemas/GenreCount"
+        topTags:
+          type: array
+          items:
+            $ref: "#/components/schemas/TagCount"
+        sentimentBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/GenreCount"
+        avgDuration:
+          type: ["number", "null"]
+      required:
+        - totalVideos
+        - analyzedVideos
+        - pendingVideos
+        - genreDistribution
+        - topTags
+        - sentimentBreakdown
+
+    TrendPoint:
+      type: object
+      properties:
+        date:
+          type: string
+        count:
+          type: integer
+        genre:
+          type: ["string", "null"]
+      required:
+        - date
+        - count
+
+    ContentTrendsResponse:
+      type: object
+      properties:
+        trends:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrendPoint"
+      required:
+        - trends
